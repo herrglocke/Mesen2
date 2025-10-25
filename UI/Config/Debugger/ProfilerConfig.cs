@@ -10,5 +10,6 @@ namespace Mesen.Config
 		[Reactive] public bool RefreshOnBreakPause { get; set; } = true;
 		[Reactive] public string SortColumn { get; set; } = "InclusiveTime";
 		[Reactive] public bool SortDescending { get; set; } = true;
+		[Reactive] public string FilterText { get; set; } = "";
 	}
 }

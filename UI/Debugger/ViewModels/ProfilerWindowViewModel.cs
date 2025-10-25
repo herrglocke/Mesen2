@@ -139,6 +139,7 @@ namespace Mesen.Debugger.ViewModels
 		[Reactive] public MesenList<ProfiledFunctionViewModel> GridData { get; private set; } = new();
 		[Reactive] public SelectionModel<ProfiledFunctionViewModel> Selection { get; set; } = new();
 		[Reactive] public SortState SortState { get; set; } = new();
+		[Reactive] public string FilterText { get; set; } = "";
 		public ProfilerConfig Config => ConfigManager.Config.Debug.Profiler;
 		public List<int> ColumnWidths { get; } = ConfigManager.Config.Debug.Profiler.ColumnWidths;
 
@@ -152,6 +153,11 @@ namespace Mesen.Debugger.ViewModels
 		public ProfilerTab()
 		{
 			SortState.SetColumnSort(Config.SortColumn, Config.SortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending, false);
+			FilterText = Config.FilterText;
+			this.WhenAnyValue(x => x.FilterText).Subscribe(_ => {
+				Config.FilterText = FilterText;
+				RefreshGrid();
+			});
 		}
 
 		public ProfiledFunction? GetRawData(int index)
@@ -186,16 +192,24 @@ namespace Mesen.Debugger.ViewModels
 			}
 
 			Sort();
-
 			UInt64 totalCycles = 0;
-			ProfiledFunction[] profilerData = _profilerData;
-			foreach(ProfiledFunction f in profilerData) {
-				totalCycles += f.ExclusiveCycles;
+			for(int i = 0; i < _profilerData.Length; i++) {
+				totalCycles += _profilerData[i].ExclusiveCycles;
 			}
 			_totalCycles = totalCycles;
 
+			ProfiledFunction[] profilerData = _profilerData;
+			if(!string.IsNullOrEmpty(FilterText)) {
+				CpuType cpuType = CpuType;
+				profilerData = profilerData.Where(f => f.GetFunctionName(cpuType).IndexOf(FilterText, StringComparison.OrdinalIgnoreCase) >= 0).ToArray();
+			}
+
 			while(GridData.Count < profilerData.Length) {
 				GridData.Add(new ProfiledFunctionViewModel());
+			}
+
+			while(GridData.Count > profilerData.Length) {
+				GridData.RemoveAt(GridData.Count - 1);
 			}
 
 			for(int i = 0; i < profilerData.Length; i++) {
@@ -205,14 +219,12 @@ namespace Mesen.Debugger.ViewModels
 
 		public void SortCommand(object? param)
 		{
-<<<<<<< HEAD
-=======
 			if(SortState.SortOrder.Count > 0) {
 				(string column, ListSortDirection dir) = (SortState.SortOrder[0].Item1, SortState.SortOrder[0].Item2);
 				Config.SortColumn = column;
 				Config.SortDescending = dir == ListSortDirection.Descending;
 			}
->>>>>>> f26c7f14 (Profiler: Persist sort column and direction)
+			Config.FilterText = FilterText;
 			RefreshGrid();
 		}
 

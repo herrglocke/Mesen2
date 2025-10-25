@@ -46,7 +46,9 @@
 			<TabControl.ContentTemplate>
 				<DataTemplate DataType="vm:ProfilerTab">
 					<Border BorderBrush="Gray" BorderThickness="1">
-						<DataBox
+						<DockPanel>
+							<TextBox DockPanel.Dock="Top" Margin="2" Watermark="Filter" Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"/>
+							<DataBox
 							Name="ProfilerList"
 							Items="{Binding GridData}"
 							Selection="{Binding Selection}"
@@ -69,6 +71,7 @@
 								<DataBoxTextColumn ColumnName="MaxCycles" Header="{l:Translate colMaxCycles}" Binding="{Binding MaxCycles, DataType={x:Type vm:ProfiledFunctionViewModel}}" CanUserResize="True" InitialWidth="61" />
 							</DataBox.Columns>
 						</DataBox>
+						</DockPanel>
 					</Border>
 				</DataTemplate>
 			</TabControl.ContentTemplate>
