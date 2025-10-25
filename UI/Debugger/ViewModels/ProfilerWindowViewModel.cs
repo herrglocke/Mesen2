@@ -192,18 +192,17 @@ namespace Mesen.Debugger.ViewModels
 			}
 
 			Sort();
+			UInt64 totalCycles = 0;
+			for(int i = 0; i < _profilerData.Length; i++) {
+				totalCycles += _profilerData[i].ExclusiveCycles;
+			}
+			_totalCycles = totalCycles;
 
 			ProfiledFunction[] profilerData = _profilerData;
 			if(!string.IsNullOrEmpty(FilterText)) {
 				CpuType cpuType = CpuType;
 				profilerData = profilerData.Where(f => f.GetFunctionName(cpuType).IndexOf(FilterText, StringComparison.OrdinalIgnoreCase) >= 0).ToArray();
 			}
-
-			UInt64 totalCycles = 0;
-			foreach(ProfiledFunction f in profilerData) {
-				totalCycles += f.ExclusiveCycles;
-			}
-			_totalCycles = totalCycles;
 
 			while(GridData.Count < profilerData.Length) {
 				GridData.Add(new ProfiledFunctionViewModel());
