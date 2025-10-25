@@ -28,7 +28,7 @@ enum class ConsoleNotificationType
 	GameLoadFailed,
 	CheatsChanged,
 	RequestConfigChange,
-	RefreshSoftwareRenderer,
+    RefreshSoftwareRenderer,
 };
 
 struct GameLoadedEventParams
