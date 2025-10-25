@@ -139,6 +139,7 @@ namespace Mesen.Debugger.ViewModels
 		[Reactive] public MesenList<ProfiledFunctionViewModel> GridData { get; private set; } = new();
 		[Reactive] public SelectionModel<ProfiledFunctionViewModel> Selection { get; set; } = new();
 		[Reactive] public SortState SortState { get; set; } = new();
+		[Reactive] public string FilterText { get; set; } = "";
 		public ProfilerConfig Config => ConfigManager.Config.Debug.Profiler;
 		public List<int> ColumnWidths { get; } = ConfigManager.Config.Debug.Profiler.ColumnWidths;
 
@@ -151,7 +152,8 @@ namespace Mesen.Debugger.ViewModels
 
 		public ProfilerTab()
 		{
-			SortState.SetColumnSort("InclusiveTime", ListSortDirection.Descending, false);
+			SortState.SetColumnSort(Config.SortColumn, Config.SortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending, false);
+			FilterText = Config.FilterText;
 		}
 
 		public ProfiledFunction? GetRawData(int index)
@@ -187,8 +189,13 @@ namespace Mesen.Debugger.ViewModels
 
 			Sort();
 
-			UInt64 totalCycles = 0;
 			ProfiledFunction[] profilerData = _profilerData;
+			if(!string.IsNullOrEmpty(FilterText)) {
+				CpuType cpuType = CpuType;
+				profilerData = profilerData.Where(f => f.GetFunctionName(cpuType).IndexOf(FilterText, StringComparison.OrdinalIgnoreCase) >= 0).ToArray();
+			}
+
+			UInt64 totalCycles = 0;
 			foreach(ProfiledFunction f in profilerData) {
 				totalCycles += f.ExclusiveCycles;
 			}
@@ -205,6 +212,12 @@ namespace Mesen.Debugger.ViewModels
 
 		public void SortCommand(object? param)
 		{
+			if(SortState.SortOrder.Count > 0) {
+				(string column, ListSortDirection dir) = (SortState.SortOrder[0].Item1, SortState.SortOrder[0].Item2);
+				Config.SortColumn = column;
+				Config.SortDescending = dir == ListSortDirection.Descending;
+			}
+			Config.FilterText = FilterText;
 			RefreshGrid();
 		}
 
