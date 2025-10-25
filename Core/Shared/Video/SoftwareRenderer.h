@@ -30,4 +30,5 @@ public:
 	void Render(RenderSurfaceInfo& emuHud, RenderSurfaceInfo& scriptHud) override;
 	void Reset() override;
 	void SetExclusiveFullscreenMode(bool fullscreen, void* windowHandle) override;
+    bool PublishesUiSurfaces() const override { return true; }
 };

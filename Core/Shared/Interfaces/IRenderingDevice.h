@@ -47,4 +47,5 @@ class IRenderingDevice
 		virtual void Reset() = 0;
 		virtual void OnRendererThreadStarted() {}
 		virtual void SetExclusiveFullscreenMode(bool fullscreen, void* windowHandle) = 0;
+		virtual bool PublishesUiSurfaces() const { return false; }
 };
