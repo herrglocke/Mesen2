@@ -154,6 +154,10 @@ namespace Mesen.Debugger.ViewModels
 		{
 			SortState.SetColumnSort(Config.SortColumn, Config.SortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending, false);
 			FilterText = Config.FilterText;
+			this.WhenAnyValue(x => x.FilterText).Subscribe(_ => {
+				Config.FilterText = FilterText;
+				RefreshGrid();
+			});
 		}
 
 		public ProfiledFunction? GetRawData(int index)
@@ -203,6 +207,10 @@ namespace Mesen.Debugger.ViewModels
 
 			while(GridData.Count < profilerData.Length) {
 				GridData.Add(new ProfiledFunctionViewModel());
+			}
+
+			while(GridData.Count > profilerData.Length) {
+				GridData.RemoveAt(GridData.Count - 1);
 			}
 
 			for(int i = 0; i < profilerData.Length; i++) {
