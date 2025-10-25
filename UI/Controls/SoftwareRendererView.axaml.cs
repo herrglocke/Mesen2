@@ -90,7 +90,9 @@ namespace Mesen.Controls
 		[Reactive] public DynamicBitmap? FrameSurface { get; set; }
 		[Reactive] public DynamicBitmap? EmuHudSurface { get; set; }
 		[Reactive] public DynamicBitmap? ScriptHudSurface { get; set; }
+		[Reactive] public DynamicBitmap? ScriptCanvasSurface { get; set; }
 		[Reactive] public double Width { get; set; }
 		[Reactive] public double Height { get; set; }
+		[Reactive] public bool ShowScriptHudOverlay { get; set; } = true;
 	}
 }

@@ -58,6 +58,7 @@ Debugger* LuaApi::_debugger = nullptr;
 Emulator* LuaApi::_emu = nullptr;
 MemoryDumper* LuaApi::_memoryDumper = nullptr;
 ScriptingContext* LuaApi::_context = nullptr;
+static std::optional<ScriptDrawSurface> _globalDrawSurfaceOverride;
 
 enum class AccessCounterType
 {
@@ -205,12 +206,16 @@ void LuaApi::GenerateEnumDefinition(lua_State* lua, string enumName, unordered_s
 
 DebugHud* LuaApi::GetHud()
 {
-	if(_context->GetDrawSurface() == ScriptDrawSurface::ConsoleScreen) {
-		return _emu->GetDebugHud();
-	} else {
-		return _emu->GetScriptHud();
-	}
+    ScriptDrawSurface target = _context->GetDrawSurface();
+    switch(target) {
+        case ScriptDrawSurface::ConsoleScreen: return _emu->GetDebugHud();
+        case ScriptDrawSurface::ScriptHud: return _emu->GetScriptHud();
+        case ScriptDrawSurface::ScriptCanvas: return _emu->GetScriptCanvasHud();
+        default: return _emu->GetDebugHud();
+    }
 }
+
+// Removed global override feature
 
 int LuaApi::SelectDrawSurface(lua_State* lua)
 {
@@ -222,12 +227,17 @@ int LuaApi::SelectDrawSurface(lua_State* lua)
 	if(surfaceScale != -1) {
 		errorCond(surface == ScriptDrawSurface::ConsoleScreen && surfaceScale != 1, "scale for the console screen must be 1");
 		errorCond(surface == ScriptDrawSurface::ScriptHud && (surfaceScale < 1 || surfaceScale > 4), "scale for the script HUD must be between 1 and 4");
+		errorCond(surface == ScriptDrawSurface::ScriptCanvas && (surfaceScale < 1 || surfaceScale > 4), "scale for the script canvas must be between 1 and 4");
 	}
 	checkEnum(ScriptDrawSurface, surface, "invalid draw surface value");
 	_context->SetDrawSurface(surface);
 
-	if(surfaceScale != -1 && surface == ScriptDrawSurface::ScriptHud) {
-		_emu->GetVideoRenderer()->SetScriptHudScale(surfaceScale);
+	if(surfaceScale != -1) {
+		if(surface == ScriptDrawSurface::ScriptHud) {
+			_emu->GetVideoRenderer()->SetScriptHudScale(surfaceScale);
+		} else if(surface == ScriptDrawSurface::ScriptCanvas) {
+			_emu->GetVideoRenderer()->SetScriptCanvasScale(surfaceScale);
+		}
 	}
 	return 0;
 }

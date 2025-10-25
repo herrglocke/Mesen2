@@ -3218,6 +3218,7 @@ E
 			<Value ID="OpenEventViewer">Open Event Viewer</Value>
 			<Value ID="OpenMemoryTools">Open Memory Viewer</Value>
 			<Value ID="OpenProfiler">Open Profiler</Value>
+			<Value ID="OpenScriptCanvas">Open Script Canvas</Value>
 			<Value ID="OpenScriptWindow">Open Script Window</Value>
 			<Value ID="OpenWatchWindow">Open Watch Window</Value>
 			<Value ID="OpenTraceLogger">Open Trace Logger</Value>
@@ -3501,6 +3502,7 @@ E
 			<Value ID="OpenEventViewer">Event Viewer</Value>
 			<Value ID="OpenMemoryTools">Memory Viewer</Value>
 			<Value ID="OpenProfiler">Profiler</Value>
+			<Value ID="OpenScriptCanvas">Script Canvas</Value>
 			<Value ID="OpenScriptWindow">Script Window</Value>
 			<Value ID="OpenWatchWindow">Watch Window</Value>
 			<Value ID="OpenMemorySearch">Memory Search</Value>

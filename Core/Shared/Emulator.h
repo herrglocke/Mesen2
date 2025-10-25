@@ -72,6 +72,7 @@ private:
 	const unique_ptr<EmuSettings> _settings;
 	const unique_ptr<DebugHud> _debugHud;
 	const unique_ptr<DebugHud> _scriptHud;
+	const unique_ptr<DebugHud> _scriptCanvasHud;
 	const unique_ptr<NotificationManager> _notificationManager;
 	const unique_ptr<BatteryManager> _batteryManager;
 	const unique_ptr<SoundMixer> _soundMixer;
@@ -197,6 +198,7 @@ public:
 	RewindManager* GetRewindManager() { return _rewindManager.get(); }
 	DebugHud* GetDebugHud() { return _debugHud.get(); }
 	DebugHud* GetScriptHud() { return _scriptHud.get(); }
+	DebugHud* GetScriptCanvasHud() { return _scriptCanvasHud.get(); }
 	BatteryManager* GetBatteryManager() { return _batteryManager.get(); }
 	CheatManager* GetCheatManager() { return _cheatManager.get(); }
 	MovieManager* GetMovieManager() { return _movieManager.get(); }
