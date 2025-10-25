@@ -151,7 +151,7 @@ namespace Mesen.Debugger.ViewModels
 
 		public ProfilerTab()
 		{
-			SortState.SetColumnSort("InclusiveTime", ListSortDirection.Descending, false);
+			SortState.SetColumnSort(Config.SortColumn, Config.SortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending, false);
 		}
 
 		public ProfiledFunction? GetRawData(int index)
@@ -205,6 +205,14 @@ namespace Mesen.Debugger.ViewModels
 
 		public void SortCommand(object? param)
 		{
+<<<<<<< HEAD
+=======
+			if(SortState.SortOrder.Count > 0) {
+				(string column, ListSortDirection dir) = (SortState.SortOrder[0].Item1, SortState.SortOrder[0].Item2);
+				Config.SortColumn = column;
+				Config.SortDescending = dir == ListSortDirection.Descending;
+			}
+>>>>>>> f26c7f14 (Profiler: Persist sort column and direction)
 			RefreshGrid();
 		}
 
