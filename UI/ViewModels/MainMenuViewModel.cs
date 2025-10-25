@@ -1040,6 +1040,13 @@ namespace Mesen.ViewModels
 					OnClick = () => DebugWindowManager.OpenDebugWindow(() => new ScriptWindow(new ScriptWindowViewModel(null)))
 				},
 				new ContextMenuAction() {
+					ActionType = ActionType.OpenScriptCanvas,
+					IsEnabled = () => IsGameRunning,
+					OnClick = () => {
+						ApplicationHelper.GetOrCreateUniqueWindow((Window)wnd, () => new Mesen.Debugger.Windows.ScriptCanvasWindow());
+					}
+				},
+				new ContextMenuAction() {
 					ActionType = ActionType.OpenWatchWindow,
 					Shortcut = () => ConfigManager.Config.Debug.Shortcuts.Get(DebuggerShortcut.OpenWatchWindow),
 					IsEnabled = () => IsGameRunning,

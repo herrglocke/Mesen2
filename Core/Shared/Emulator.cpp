@@ -53,6 +53,7 @@ Emulator::Emulator() :
 	_settings(new EmuSettings(this)),
 	_debugHud(new DebugHud()),
 	_scriptHud(new DebugHud()),
+	_scriptCanvasHud(new DebugHud()),
 	_notificationManager(new NotificationManager()),
 	_batteryManager(new BatteryManager()),
 	_soundMixer(new SoundMixer(this)),

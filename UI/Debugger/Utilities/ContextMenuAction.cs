@@ -554,6 +554,9 @@ namespace Mesen.Debugger.Utilities
 		[IconFile("Script")]
 		OpenScriptWindow,
 
+		[IconFile("Script")]
+		OpenScriptCanvas,
+
 		[IconFile("Find")]
 		OpenWatchWindow,
 

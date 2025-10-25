@@ -49,9 +49,13 @@ private:
 
 	RenderSurfaceInfo _emuHudSurface = {};
 	RenderSurfaceInfo _scriptHudSurface = {};
+	RenderSurfaceInfo _scriptCanvasSurface = {};
 	bool _needScriptHudClear = false;
+	bool _needScriptCanvasClear = false;
 	uint32_t _scriptHudScale = 2;
 	uint32_t _lastScriptHudFrameNumber = 0;
+	uint32_t _lastScriptCanvasFrameNumber = 0;
+	uint32_t _scriptCanvasScale = 2;
 	bool _needRedraw = true;
 
 	RenderedFrame _lastFrame;
@@ -61,6 +65,7 @@ private:
 
 	void RenderThread();
 	bool DrawScriptHud(RenderedFrame& frame);
+	bool DrawScriptCanvas(RenderedFrame& frame);
 	
 	FrameInfo GetEmuHudSize(FrameInfo baseFrameSize);
 
@@ -74,7 +79,9 @@ public:
 	void SetRendererSize(uint32_t width, uint32_t height);
 	
 	void SetScriptHudScale(uint32_t scale) { _scriptHudScale = scale; }
+	void SetScriptCanvasScale(uint32_t scale) { _scriptCanvasScale = scale; }
 	std::pair<FrameInfo, OverscanDimensions> GetScriptHudSize();
+	std::pair<FrameInfo, OverscanDimensions> GetScriptCanvasSize();
 
 	void StartThread();
 	void StopThread();
@@ -88,4 +95,6 @@ public:
 	void AddRecordingSound(int16_t* soundBuffer, uint32_t sampleCount, uint32_t sampleRate);
 	void StopRecording();
 	bool IsRecording();
+
+	const RenderSurfaceInfo& GetScriptCanvasSurface() const { return _scriptCanvasSurface; }
 };

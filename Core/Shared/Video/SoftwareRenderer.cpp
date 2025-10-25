@@ -65,7 +65,8 @@ struct SoftwareRendererFrame
 {
 	SoftwareRendererSurface Frame;
 	SoftwareRendererSurface EmuHud;
-	SoftwareRendererSurface ScriptHud;
+    SoftwareRendererSurface ScriptHud;
+    SoftwareRendererSurface ScriptCanvas;
 };
 
 void SoftwareRenderer::Render(RenderSurfaceInfo& emuHud, RenderSurfaceInfo& scriptHud)
@@ -78,11 +79,13 @@ void SoftwareRenderer::Render(RenderSurfaceInfo& emuHud, RenderSurfaceInfo& scri
 		std::swap(_textureBuffer[0], _textureBuffer[1]);
 	}
 
-	SoftwareRendererFrame frame = {
-		{ _textureBuffer[1], _frameWidth, _frameHeight, true },
-		{ emuHud.Buffer, emuHud.Width, emuHud.Height, emuHud.IsDirty },
-		{ scriptHud.Buffer, scriptHud.Width, scriptHud.Height, scriptHud.IsDirty }
-	};
+    const RenderSurfaceInfo& canvas = _emu->GetVideoRenderer()->GetScriptCanvasSurface();
+    SoftwareRendererFrame frame = {
+        { _textureBuffer[1], _frameWidth, _frameHeight, true },
+        { emuHud.Buffer, emuHud.Width, emuHud.Height, emuHud.IsDirty },
+        { scriptHud.Buffer, scriptHud.Width, scriptHud.Height, scriptHud.IsDirty },
+        { canvas.Buffer, canvas.Width, canvas.Height, canvas.IsDirty }
+    };
 
 	_emu->GetNotificationManager()->SendNotification(ConsoleNotificationType::RefreshSoftwareRenderer, &frame);
 }

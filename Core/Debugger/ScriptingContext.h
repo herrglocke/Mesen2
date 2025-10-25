@@ -28,7 +28,8 @@ struct MemoryCallback
 enum class ScriptDrawSurface
 {
 	ConsoleScreen,
-	ScriptHud
+    ScriptHud,
+    ScriptCanvas
 };
 
 class ScriptingContext

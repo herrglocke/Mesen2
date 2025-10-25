@@ -391,6 +391,7 @@ namespace Mesen.Interop
 	{
 		public SoftwareRendererSurface Frame;
 		public SoftwareRendererSurface EmuHud;
-		public SoftwareRendererSurface ScriptHud;
+        public SoftwareRendererSurface ScriptHud;
+        public SoftwareRendererSurface ScriptCanvas;
 	}
 }

@@ -1,0 +1,17 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:c="using:Mesen.Controls"
+    x:Class="Mesen.Debugger.Windows.ScriptCanvasWindow"
+    x:DataType="c:SoftwareRendererViewModel"
+    Width="480" Height="360"
+    Title="Script Canvas">
+    <Grid>
+        <c:SimpleImageViewer
+            Name="ScriptCanvas"
+            Source="{Binding ScriptCanvasSurface}"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch" />
+    </Grid>
+</Window>
+

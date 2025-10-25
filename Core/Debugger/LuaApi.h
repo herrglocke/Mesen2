@@ -6,6 +6,7 @@
 
 struct lua_State;
 class ScriptingContext;
+enum class ScriptDrawSurface;
 class Debugger;
 class Emulator;
 class MemoryDumper;
@@ -21,6 +22,7 @@ public:
 	static void LuaPushIntValue(lua_State* lua, string name, int value);
 
 	static DebugHud* GetHud();
+
 
 	static int SelectDrawSurface(lua_State* lua);
 

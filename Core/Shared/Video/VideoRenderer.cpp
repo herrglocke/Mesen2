@@ -11,6 +11,8 @@
 #include "Utilities/Video/IVideoRecorder.h"
 #include "Utilities/Video/AviRecorder.h"
 #include "Utilities/Video/GifRecorder.h"
+#include "Shared/NotificationManager.h"
+#include "Shared/Interfaces/INotificationListener.h"
 
 VideoRenderer::VideoRenderer(Emulator* emu)
 {
@@ -77,10 +79,11 @@ void VideoRenderer::RenderThread()
 		//Wait until a frame is ready, or until 32ms have passed (to allow HUD to update at ~30fps when paused)
 		bool forceRender = !_waitForRender.Wait(32);
 		if(_renderer) {
-			FrameInfo size = _emu->GetVideoDecoder()->GetBaseFrameInfo(true);
-			_scriptHudSurface.UpdateSize(size.Width * _scriptHudScale, size.Height * _scriptHudScale);
+			FrameInfo baseSize = _emu->GetVideoDecoder()->GetBaseFrameInfo(true);
+			_scriptHudSurface.UpdateSize(baseSize.Width * _scriptHudScale, baseSize.Height * _scriptHudScale);
+			_scriptCanvasSurface.UpdateSize(baseSize.Width * _scriptHudScale, baseSize.Height * _scriptHudScale);
 
-			size = GetEmuHudSize(size);
+			FrameInfo size = GetEmuHudSize(baseSize);
 			if(_emuHudSurface.UpdateSize(size.Width, size.Height)) {
 				_rendererHud->ClearScreen();
 			}
@@ -99,10 +102,20 @@ void VideoRenderer::RenderThread()
 			
 			_emuHudSurface.IsDirty = _rendererHud->Draw(_emuHudSurface.Buffer, size, {}, 0, {}, true);
 			_scriptHudSurface.IsDirty = DrawScriptHud(frame);
+			_scriptCanvasSurface.IsDirty = DrawScriptCanvas(frame);
 
-			if(forceRender || _needRedraw || _emuHudSurface.IsDirty || _scriptHudSurface.IsDirty) {
+				if(forceRender || _needRedraw || _emuHudSurface.IsDirty || _scriptHudSurface.IsDirty || _scriptCanvasSurface.IsDirty) {
 				_needRedraw = false;
 				_renderer->Render(_emuHudSurface, _scriptHudSurface);
+					if(!_renderer->PublishesUiSurfaces()) {
+						struct NotifSurface { uint32_t* Buffer; uint32_t Width; uint32_t Height; bool IsDirty; };
+						struct NotifFrame { NotifSurface Frame; NotifSurface EmuHud; NotifSurface ScriptHud; NotifSurface ScriptCanvas; };
+						NotifFrame nf = {};
+						nf.EmuHud = { _emuHudSurface.Buffer, _emuHudSurface.Width, _emuHudSurface.Height, _emuHudSurface.IsDirty };
+						nf.ScriptHud = { _scriptHudSurface.Buffer, _scriptHudSurface.Width, _scriptHudSurface.Height, _scriptHudSurface.IsDirty };
+						nf.ScriptCanvas = { _scriptCanvasSurface.Buffer, _scriptCanvasSurface.Width, _scriptCanvasSurface.Height, _scriptCanvasSurface.IsDirty };
+						_emu->GetNotificationManager()->SendNotification(ConsoleNotificationType::RefreshSoftwareRenderer, &nf);
+					}
 			}
 		}
 	}
@@ -148,6 +161,27 @@ bool VideoRenderer::DrawScriptHud(RenderedFrame& frame)
 	return needRedraw;
 }
 
+bool VideoRenderer::DrawScriptCanvas(RenderedFrame& frame)
+{
+    bool needRedraw = false;
+    if(_lastScriptCanvasFrameNumber != frame.FrameNumber) {
+        if(_needScriptCanvasClear) {
+            _scriptCanvasSurface.Clear();
+            _needScriptCanvasClear = false;
+            needRedraw = true;
+        }
+
+        if(_emu->GetScriptCanvasHud()->HasCommands()) {
+            auto [size, overscan] = GetScriptCanvasSize();
+            _emu->GetScriptCanvasHud()->Draw(_scriptCanvasSurface.Buffer, size, overscan, frame.FrameNumber, {});
+            _needScriptCanvasClear = true;
+            _lastScriptCanvasFrameNumber = frame.FrameNumber;
+            needRedraw = true;
+        }
+    }
+    return needRedraw;
+}
+
 std::pair<FrameInfo, OverscanDimensions> VideoRenderer::GetScriptHudSize()
 {
 	FrameInfo scriptHudSize = { _scriptHudSurface.Width, _scriptHudSurface.Height };
@@ -157,6 +191,17 @@ std::pair<FrameInfo, OverscanDimensions> VideoRenderer::GetScriptHudSize()
 	overscan.Left *= _scriptHudScale;
 	overscan.Right *= _scriptHudScale;
 	return { scriptHudSize, overscan };
+}
+
+std::pair<FrameInfo, OverscanDimensions> VideoRenderer::GetScriptCanvasSize()
+{
+    FrameInfo size = { _scriptCanvasSurface.Width, _scriptCanvasSurface.Height };
+    OverscanDimensions overscan = _emu->GetSettings()->GetOverscan();
+    overscan.Top *= _scriptCanvasScale;
+    overscan.Bottom *= _scriptCanvasScale;
+    overscan.Left *= _scriptCanvasScale;
+    overscan.Right *= _scriptCanvasScale;
+    return { size, overscan };
 }
 
 void VideoRenderer::UpdateFrame(RenderedFrame& frame)
