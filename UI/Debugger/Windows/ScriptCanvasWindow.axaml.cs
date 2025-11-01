@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using Avalonia.Input;
 using Mesen.Controls;
 using Mesen.Debugger.Windows;
 using Mesen.Interop;
@@ -19,6 +20,7 @@ namespace Mesen.Debugger.Windows
         private NotificationListener _listener;
         private SimpleImageViewer _scriptCanvas;
         private SoftwareRendererViewModel _model = new();
+        private bool _isOpen = false;
 
         public ScriptCanvasWindow()
         {
@@ -30,10 +32,20 @@ namespace Mesen.Debugger.Windows
             _listener = new NotificationListener();
             _listener.OnNotification += OnNotification;
 
-        
+            _scriptCanvas.PointerMoved += OnCanvasPointerChanged;
+            _scriptCanvas.PointerPressed += OnCanvasPointerChanged;
+            _scriptCanvas.PointerReleased += OnCanvasPointerChanged;
+            _scriptCanvas.PointerExited += OnCanvasPointerExited;
+            
             Closed += (s, e) => {
                 Dispose();
             };
+
+            Opened += (s, e) => { _isOpen = true; };
+            Closing += (s, e) => { _isOpen = false; };
+            Closed += (s, e) => { _isOpen = false; };
+            Activated += (s, e) => { /* no-op */ };
+            Deactivated += (s, e) => { InputApi.SetScriptCanvasMouseState(-1, -1, false, false, false); };
         }
 
         private void InitializeComponent()
@@ -59,11 +71,11 @@ namespace Mesen.Debugger.Windows
 
         private void OnNotification(NotificationEventArgs e)
         {
+            if(!_isOpen) { return; }
+            if(_scriptCanvas == null || _scriptCanvas.Bounds.Width <= 0 || _scriptCanvas.Bounds.Height <= 0) { return; }
             if(e.NotificationType == ConsoleNotificationType.RefreshSoftwareRenderer) {
                 var frame = System.Runtime.InteropServices.Marshal.PtrToStructure<SoftwareRendererFrame>(e.Parameter);
-                Dispatcher.UIThread.Post(() => {
-                    UpdateFromSoftwareRendererFrame(frame);
-                }, DispatcherPriority.MaxValue);
+                UpdateFromSoftwareRendererFrame(frame);
             }
         }
 
@@ -73,8 +85,42 @@ namespace Mesen.Debugger.Windows
                 if(frame.ScriptCanvas.IsDirty) {
                     UpdateSurface(frame.ScriptCanvas, _model.ScriptCanvasSurface, s => _model.ScriptCanvasSurface = s);
                 }
-                _scriptCanvas.InvalidateVisual();
+                Dispatcher.UIThread.Post(() => {
+                    _scriptCanvas.InvalidateVisual();
+                }, DispatcherPriority.MaxValue);
             }
+        }
+
+        private void OnCanvasPointerExited(object? sender, PointerEventArgs e)
+        {
+            if(!_isOpen) { return; }
+            InputApi.SetScriptCanvasMouseState(-1, -1, false, false, false);
+        }
+
+        private void OnCanvasPointerChanged(object? sender, PointerEventArgs e)
+        {
+            if(!_isOpen) { return; }
+            var surf = _model.ScriptCanvasSurface;
+            if(surf == null || surf.PixelSize.Width <= 0 || surf.PixelSize.Height <= 0 || _scriptCanvas.Bounds.Width <= 0 || _scriptCanvas.Bounds.Height <= 0) {
+                InputApi.SetScriptCanvasMouseState(-1, -1, false, false, false);
+                return;
+            }
+
+            Point p = e.GetPosition(_scriptCanvas);
+            double w = _scriptCanvas.Bounds.Width;
+            double h = _scriptCanvas.Bounds.Height;
+            int srcW = surf.PixelSize.Width;
+            int srcH = surf.PixelSize.Height;
+
+            int x = (int)Math.Clamp(p.X * srcW / Math.Max(1.0, w), 0, Math.Max(0, srcW - 1));
+            int y = (int)Math.Clamp(p.Y * srcH / Math.Max(1.0, h), 0, Math.Max(0, srcH - 1));
+
+            var props = e.GetCurrentPoint(_scriptCanvas).Properties;
+            bool left = props.IsLeftButtonPressed;
+            bool middle = props.IsMiddleButtonPressed;
+            bool right = props.IsRightButtonPressed;
+
+            InputApi.SetScriptCanvasMouseState((short)x, (short)y, left, middle, right);
         }
 
         public void Dispose()

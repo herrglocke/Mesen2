@@ -3,6 +3,7 @@
 #include "Lua/lua.hpp"
 #include "Debugger/LuaCallHelper.h"
 #include "Debugger/Debugger.h"
+#include "Debugger/ScriptManager.h"
 #include "Debugger/MemoryDumper.h"
 #include "Debugger/ScriptingContext.h"
 #include "Debugger/MemoryAccessCounter.h"
@@ -58,7 +59,6 @@ Debugger* LuaApi::_debugger = nullptr;
 Emulator* LuaApi::_emu = nullptr;
 MemoryDumper* LuaApi::_memoryDumper = nullptr;
 ScriptingContext* LuaApi::_context = nullptr;
-static std::optional<ScriptDrawSurface> _globalDrawSurfaceOverride;
 
 enum class AccessCounterType
 {
@@ -122,6 +122,9 @@ int LuaApi::GetLibrary(lua_State *lua)
 		{ "getScreenBuffer", LuaApi::GetScreenBuffer },
 		{ "setScreenBuffer", LuaApi::SetScreenBuffer },
 		{ "getPixel", LuaApi::GetPixel },
+
+		{ "hitTestPointInRect", LuaApi::HitTestPointInRect },
+		{ "hitTestPointInCircle", LuaApi::HitTestPointInCircle },
 
 		{ "getMouseState", LuaApi::GetMouseState },
 		{ "log", LuaApi::Log },
@@ -623,14 +626,16 @@ int LuaApi::GetDrawSurfaceSize(lua_State* lua)
 	ScriptDrawSurface surface = (ScriptDrawSurface)l.ReadInteger((uint32_t)_context->GetDrawSurface());
 	checkEnum(ScriptDrawSurface, surface, "invalid draw surface");
 
-	FrameInfo size;
-	OverscanDimensions overscan;
-	if(surface == ScriptDrawSurface::ConsoleScreen) {
-		size = _emu->GetVideoDecoder()->GetBaseFrameInfo(true);
-		overscan = _emu->GetSettings()->GetOverscan();
-	} else {
-		std::tie(size, overscan) = _emu->GetVideoRenderer()->GetScriptHudSize();
-	}
+    FrameInfo size;
+    OverscanDimensions overscan;
+    if(surface == ScriptDrawSurface::ConsoleScreen) {
+        size = _emu->GetVideoDecoder()->GetBaseFrameInfo(true);
+        overscan = _emu->GetSettings()->GetOverscan();
+    } else if(surface == ScriptDrawSurface::ScriptHud) {
+        std::tie(size, overscan) = _emu->GetVideoRenderer()->GetScriptHudSize();
+    } else /* ScriptCanvas */ {
+        std::tie(size, overscan) = _emu->GetVideoRenderer()->GetScriptCanvasSize();
+    }
 
 	lua_newtable(lua);
 	lua_pushintvalue(width, size.Width + overscan.Left + overscan.Right);
@@ -716,17 +721,27 @@ int LuaApi::GetPixel(lua_State *lua)
 int LuaApi::GetMouseState(lua_State *lua)
 {
 	LuaCallHelper l(lua);
+    ScriptDrawSurface surface = (ScriptDrawSurface)l.ReadInteger((uint32_t)_context->GetDrawSurface());
 	MousePosition pos = KeyManager::GetMousePosition();
-	checkparams();
+	bool left = KeyManager::IsMouseButtonPressed(MouseButton::LeftButton);
+	bool middle = KeyManager::IsMouseButtonPressed(MouseButton::MiddleButton);
+	bool right = KeyManager::IsMouseButtonPressed(MouseButton::RightButton);
+    if(surface == ScriptDrawSurface::ScriptCanvas) {
+        MousePosition canvasPos = {};
+        bool lbtn=false, mbtn=false, rbtn=false;
+        _debugger->GetScriptManager()->GetScriptCanvasMouseState(canvasPos, lbtn, mbtn, rbtn);
+        pos = canvasPos;
+        left = lbtn; middle = mbtn; right = rbtn;
+    }
+    checkminparams(0);
 	lua_newtable(lua);
 	lua_pushintvalue(x, pos.X);
 	lua_pushintvalue(y, pos.Y);
 	lua_pushdoublevalue(relativeX, pos.RelativeX);
 	lua_pushdoublevalue(relativeY, pos.RelativeY);
-	
-	lua_pushboolvalue(left, KeyManager::IsMouseButtonPressed(MouseButton::LeftButton));
-	lua_pushboolvalue(middle, KeyManager::IsMouseButtonPressed(MouseButton::MiddleButton));
-	lua_pushboolvalue(right, KeyManager::IsMouseButtonPressed(MouseButton::RightButton));
+	lua_pushboolvalue(left, left);
+	lua_pushboolvalue(middle, middle);
+	lua_pushboolvalue(right, right);
 	return 1;
 }
 
@@ -1156,4 +1171,39 @@ int LuaApi::SetState(lua_State* lua)
 
 	s.Stream(*_emu->GetConsole().get(), "", -1);
 	return 0;
+}
+
+int LuaApi::HitTestPointInRect(lua_State* lua)
+{
+    LuaCallHelper l(lua);
+    // Expect Lua call order: (x, y, left, top, width, height)
+    // Read in reverse to match existing helper semantics
+    int height = l.ReadInteger();
+    int width = l.ReadInteger();
+    int top = l.ReadInteger();
+    int left = l.ReadInteger();
+    int y = l.ReadInteger();
+    int x = l.ReadInteger();
+    checkminparams(6);
+    bool inside = (x >= left && y >= top && x < left + width && y < top + height);
+    l.Return(inside);
+    return l.ReturnCount();
+}
+
+int LuaApi::HitTestPointInCircle(lua_State* lua)
+{
+    LuaCallHelper l(lua);
+    // Expect Lua call order: (x, y, centerX, centerY, radius)
+    // Read in reverse to match existing helper semantics
+    int radius = l.ReadInteger();
+    int centerY = l.ReadInteger();
+    int centerX = l.ReadInteger();
+    int y = l.ReadInteger();
+    int x = l.ReadInteger();
+    checkminparams(5);
+    int dx = x - centerX;
+    int dy = y - centerY;
+    bool inside = (dx*dx + dy*dy) <= (radius*radius);
+    l.Return(inside);
+    return l.ReturnCount();
 }
